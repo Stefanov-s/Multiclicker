@@ -447,10 +447,22 @@ class AutoClicker:
             }
             self.hotkey_listener = GlobalHotKeys(hotkeys)
             self.hotkey_listener.start()
+            print("✅ Global hotkeys enabled")
         except Exception as e:
-            messagebox.showwarning("Hotkey Warning", 
-                                 f"Could not set up global hotkeys: {e}\n"
-                                 "You can still use the GUI buttons.")
+            print(f"⚠️  Hotkey setup failed: {e}")
+            # Show more helpful error message for Linux
+            if sys.platform.startswith('linux'):
+                error_msg = (f"Could not set up global hotkeys: {e}\n\n"
+                           "Linux Solutions:\n"
+                           "1. Run with sudo (not recommended)\n"
+                           "2. Add user to input group: sudo usermod -a -G input $USER\n"
+                           "3. Install xdotool: sudo apt install xdotool\n"
+                           "4. Use GUI buttons instead\n\n"
+                           "For Wayland: Global hotkeys may not work due to security restrictions.")
+            else:
+                error_msg = f"Could not set up global hotkeys: {e}\nYou can still use the GUI buttons."
+            
+            messagebox.showwarning("Hotkey Warning", error_msg)
     
     def on_config_change(self):
         """Handle configuration changes"""
@@ -505,22 +517,62 @@ class AutoClicker:
         
         while self.global_active and clicker.enabled.get():
             try:
-                # Perform click
+                # Get current mouse position
                 current_pos = self.mouse_controller.position
-                self.mouse_controller.click(mouse.Button.left, 1)
+                print(f"🖱️  Clicking at position: {current_pos}")
+                
+                # Perform click with error handling for Linux
+                try:
+                    self.mouse_controller.click(mouse.Button.left, 1)
+                except Exception as click_error:
+                    print(f"⚠️  Click failed: {click_error}")
+                    # Try alternative method for Linux
+                    if sys.platform.startswith('linux'):
+                        try:
+                            # Alternative: Use xdotool if available
+                            import subprocess
+                            
+                            # Check for bundled xdotool first (AppImage)
+                            xdotool_cmd = 'xdotool'
+                            if 'APPDIR' in os.environ:
+                                bundled_xdotool = os.path.join(os.environ['APPDIR'], 'usr', 'bin', 'xdotool')
+                                if os.path.exists(bundled_xdotool):
+                                    xdotool_cmd = bundled_xdotool
+                                    print("🎯 Using bundled xdotool from AppImage")
+                            
+                            subprocess.run([xdotool_cmd, 'click', '1'], 
+                                         check=True, capture_output=True)
+                            print("✅ Used xdotool as fallback")
+                        except (subprocess.CalledProcessError, FileNotFoundError):
+                            print("❌ xdotool not available")
+                            # Show error in UI
+                            self.root.after(0, lambda: messagebox.showerror(
+                                "Click Error", 
+                                "Cannot click outside app window.\n\n"
+                                "Linux Solutions:\n"
+                                "1. Install xdotool: sudo apt install xdotool\n"
+                                "2. Add user to input group: sudo usermod -a -G input $USER\n"
+                                "3. Run with sudo (not recommended)\n"
+                                "4. Switch from Wayland to X11 if using Wayland"))
+                            break
                 
                 # Update click count
                 clicker.click_count += 1
                 
                 # Update UI in main thread
-                self.root.after(0, lambda: clicker.update_status(True, clicker.click_count))
+                self.root.after(0, lambda c=clicker: c.update_status(True, c.click_count))
                 
                 # Wait for the specified interval
                 interval_ms = clicker.get_total_milliseconds()
                 time.sleep(interval_ms / 1000.0)
                 
             except Exception as e:
-                print(f"Error in clicker {clicker.section_id}: {e}")
+                print(f"❌ Error in clicker {clicker.section_id}: {e}")
+                # Show error in UI
+                self.root.after(0, lambda: messagebox.showerror(
+                    "Clicker Error", 
+                    f"Clicker {clicker.section_id} encountered an error:\n{e}\n\n"
+                    "This may be due to Linux security restrictions."))
                 break
         
         # Clean up when stopping
@@ -531,7 +583,7 @@ class AutoClicker:
             del self.clicker_threads[clicker.section_id]
         
         # Update UI
-        self.root.after(0, lambda: clicker.update_status(False))
+        self.root.after(0, lambda c=clicker: c.update_status(False))
     
     def on_closing(self):
         """Handle application closing"""

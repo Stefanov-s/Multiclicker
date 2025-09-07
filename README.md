@@ -19,11 +19,21 @@ A cross-platform Python autoclicker application with multiple independent clicke
 ## Download Options
 
 ### Option 1: AppImage (Linux - Easiest)
-**Coming Soon!** - Download the pre-built AppImage for instant use on any Linux distribution:
-- No dependencies to install
-- Works out of the box
-- Single file download
-- Just make executable and run!
+**Self-contained AppImage** for instant use on any Linux distribution:
+- **Zero dependencies** - includes Python, tkinter, pynput, xdotool, X11 libraries
+- **Works out of the box** on any Linux distro (Ubuntu, Fedora, Arch, etc.)
+- **Single file download** - no installation needed
+- **Just make executable and run!**
+- **Only requirement**: Add user to input group once: `sudo usermod -a -G input $USER`
+
+```bash
+# Download the AppImage (build it yourself for now)
+python3 build_appimage.py
+
+# Make executable and run
+chmod +x MultiClickerAutoclicker-x86_64.AppImage
+./MultiClickerAutoclicker-x86_64.AppImage
+```
 
 ### Option 2: Manual Installation
 Follow the installation instructions below for your operating system.
@@ -53,20 +63,22 @@ Follow the installation instructions below for your operating system.
 2. **Install Python, pip, and required system packages**:
    ```bash
    sudo apt update
-   sudo apt install python3 python3-pip python3-venv python3-tk
+   sudo apt install python3 python3-pip python3-venv python3-tk xdotool
    ```
    
    **For other distributions:**
    ```bash
    # CentOS/RHEL/Fedora
-   sudo dnf install python3-tkinter python3-pip
+   sudo dnf install python3-tkinter python3-pip xdotool
    
    # Arch Linux
-   sudo pacman -S tk python-pip
+   sudo pacman -S tk python-pip xdotool
    
    # OpenSUSE
-   sudo zypper install python3-tk python3-pip
+   sudo zypper install python3-tk python3-pip xdotool
    ```
+   
+   **Note**: `xdotool` is needed for clicking outside the application window on Linux.
 3. **Navigate to the project directory**:
    ```bash
    cd /path/to/Autoclicker
@@ -126,10 +138,13 @@ python3 build_appimage.py
 ```
 
 This creates `MultiClickerAutoclicker-x86_64.AppImage` - a single file that:
-- Contains all dependencies (Python, pynput, tkinter)
-- Works on any Linux distribution
-- Requires no installation
+- Contains all dependencies (Python, pynput, tkinter, xdotool, X11 libraries)
+- Works on any Linux distribution without installing anything
+- Includes bundled xdotool for clicking outside the app window
+- Includes X11 libraries for maximum compatibility
+- Requires no installation or system dependencies
 - Just needs to be made executable: `chmod +x MultiClickerAutoclicker-x86_64.AppImage`
+- Still requires adding user to input group: `sudo usermod -a -G input $USER`
 
 ## Usage
 
@@ -182,9 +197,17 @@ This creates `MultiClickerAutoclicker-x86_64.AppImage` - a single file that:
   ```
 
 **Global hotkeys not working:**
-- Ensure your desktop environment supports global hotkeys
-- Try running from a terminal to see error messages
-- Some Wayland-based systems may have limited global hotkey support
+- **Most common issue**: Add user to input group: `sudo usermod -a -G input $USER` then log out/in
+- **Wayland users**: Global hotkeys may not work due to security restrictions - switch to X11 session
+- **Alternative**: Install xdotool: `sudo apt install xdotool`
+- **Fallback**: Use the GUI buttons instead of F9 hotkey
+- Try running from terminal to see error messages
+
+**Clicking doesn't work outside app window:**
+- **Install xdotool**: `sudo apt install xdotool` (most important)
+- **Add to input group**: `sudo usermod -a -G input $USER` then log out/in
+- **Wayland issue**: Switch to X11 session if using Wayland
+- **Check display server**: Run `echo $XDG_SESSION_TYPE` - should be "x11" not "wayland"
 
 **X11 Display issues:**
 - If running remotely, ensure X11 forwarding is enabled
