@@ -16,6 +16,18 @@ A cross-platform Python autoclicker application with multiple independent clicke
 - Python 3.6 or higher
 - pip (Python package installer)
 
+## Download Options
+
+### Option 1: AppImage (Linux - Easiest)
+**Coming Soon!** - Download the pre-built AppImage for instant use on any Linux distribution:
+- No dependencies to install
+- Works out of the box
+- Single file download
+- Just make executable and run!
+
+### Option 2: Manual Installation
+Follow the installation instructions below for your operating system.
+
 ## Installation
 
 ### Windows
@@ -38,28 +50,86 @@ A cross-platform Python autoclicker application with multiple independent clicke
 ### Linux
 
 1. **Clone or download this repository**
-2. **Install Python and pip** (if not already installed):
+2. **Install Python, pip, and required system packages**:
    ```bash
    sudo apt update
-   sudo apt install python3 python3-pip
+   sudo apt install python3 python3-pip python3-venv python3-tk
+   ```
+   
+   **For other distributions:**
+   ```bash
+   # CentOS/RHEL/Fedora
+   sudo dnf install python3-tkinter python3-pip
+   
+   # Arch Linux
+   sudo pacman -S tk python-pip
+   
+   # OpenSUSE
+   sudo zypper install python3-tk python3-pip
    ```
 3. **Navigate to the project directory**:
    ```bash
    cd /path/to/Autoclicker
    ```
-4. **Install dependencies**:
+4. **Choose ONE of these methods to install dependencies**:
+
+   **Method 1: Virtual Environment (Recommended)**
    ```bash
-   pip3 install -r requirements.txt
+   # Create virtual environment
+   python3 -m venv autoclicker-env
+   
+   # Activate it
+   source autoclicker-env/bin/activate
+   
+   # Install dependencies
+   pip install -r requirements.txt
+   
+   # Run the application
+   python autoclicker.py
    ```
+   
+   **Method 2: User Install (Alternative)**
+   ```bash
+   pip3 install --user -r requirements.txt
+   python3 autoclicker.py
+   ```
+   
+   **Method 3: System Package (If available)**
+   ```bash
+   sudo apt install python3-pynput
+   python3 autoclicker.py
+   ```
+   
+   **Method 4: Override Protection (Not recommended)**
+   ```bash
+   pip3 install --break-system-packages -r requirements.txt
+   python3 autoclicker.py
+   ```
+
 5. **Add your user to the input group** (for mouse control):
    ```bash
    sudo usermod -a -G input $USER
    ```
 6. **Log out and log back in** for group changes to take effect
-7. **Run the application**:
-   ```bash
-   python3 autoclicker.py
-   ```
+7. **Run the application** (use method from step 4)
+
+## Building AppImage (Linux Only)
+
+To create a portable AppImage that works on any Linux distribution:
+
+```bash
+# On Linux, run the build script
+python3 build_appimage.py
+
+# Or use the shell script
+./build_appimage.sh
+```
+
+This creates `MultiClickerAutoclicker-x86_64.AppImage` - a single file that:
+- Contains all dependencies (Python, pynput, tkinter)
+- Works on any Linux distribution
+- Requires no installation
+- Just needs to be made executable: `chmod +x MultiClickerAutoclicker-x86_64.AppImage`
 
 ## Usage
 
@@ -125,6 +195,11 @@ A cross-platform Python autoclicker application with multiple independent clicke
 **"ModuleNotFoundError: No module named 'pynput'":**
 - Install dependencies: `pip install -r requirements.txt`
 - On Linux, try: `pip3 install -r requirements.txt`
+
+**"ModuleNotFoundError: No module named 'tkinter'":**
+- On Ubuntu/Debian: `sudo apt install python3-tk`
+- On CentOS/RHEL/Fedora: `sudo dnf install python3-tkinter`
+- On Arch Linux: `sudo pacman -S tk`
 
 **Application freezes or crashes:**
 - Check that timing values are reasonable (not too small)
