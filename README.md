@@ -1,42 +1,79 @@
-# Multi-Clicker Autoclicker
+# Advanced Autoclicker
 
-A cross-platform Python autoclicker application with multiple independent clickers and global hotkey support.
+A cross-platform Python autoclicker application with multiple modes and advanced automation features.
 
 ## Features
 
+### 🎯 Multi-Clicker Mode
 - **3 Independent Clickers**: Each can be configured and enabled separately
+- **Coordinate-Based Clicking**: Set specific screen coordinates for each clicker
 - **Flexible Timing**: Configure minutes, seconds, and milliseconds for each clicker
-- **Global Hotkey**: F9 to start/stop all enabled clickers
-- **Cross-Platform**: Works on Windows and Linux
 - **Real-time Status**: See click counts and current status for each clicker
-- **Simultaneous Operation**: Multiple clickers can run with different intervals
+- **Test Functionality**: Test coordinates before starting
+- **Reset Options**: Reset individual clickers or all at once
+
+### 🎬 Click Recorder Mode
+- **Record Click Sequences**: Record exact coordinates and timing of your clicks
+- **Precise Replay**: Replay sequences with original timing preserved
+- **Multiple Replays**: Set how many times to repeat the sequence
+- **Real-time Feedback**: See recording progress and replay status
+- **Sequence Management**: Clear recordings and start fresh
+
+### 🎮 Global Controls
+- **Hotkeys**: F9 (Multi-Clicker), F10 (Record/Stop Recording)
+- **Cross-Platform**: Works on Windows and Linux
+- **Tabbed Interface**: Easy switching between modes
 
 ## Requirements
 
 - Python 3.6 or higher
 - pip (Python package installer)
 
-## Download Options
+## Quick Start Options
 
-### Option 1: AppImage (Linux - Easiest)
+### 🚀 Option 1: AppImage (Linux - Recommended)
 **Self-contained AppImage** for instant use on any Linux distribution:
-- **Zero dependencies** - includes Python, tkinter, pynput, xdotool, X11 libraries
-- **Works out of the box** on any Linux distro (Ubuntu, Fedora, Arch, etc.)
-- **Single file download** - no installation needed
-- **Just make executable and run!**
-- **Only requirement**: Add user to input group once: `sudo usermod -a -G input $USER`
 
+#### ✨ **Why AppImage?**
+- ✅ **Zero dependencies** - includes Python, tkinter, pynput, xdotool, X11 libraries
+- ✅ **Works everywhere** - any Linux distro (Ubuntu, Fedora, Arch, Mint, etc.)
+- ✅ **Single file** - no installation, no package management
+- ✅ **Portable** - run from USB stick, share easily
+- ✅ **Out-of-window clicking** - bundled xdotool for Linux clicking outside app
+- ✅ **Always works** - no dependency conflicts or missing packages
+
+#### 📦 **How to Build AppImage:**
 ```bash
-# Download the AppImage (build it yourself for now)
+# 1. Clone this repository
+git clone https://github.com/yourusername/autoclicker
+cd autoclicker
+
+# 2. Build the AppImage (requires Linux)
 python3 build_appimage.py
 
-# Make executable and run
-chmod +x MultiClickerAutoclicker-x86_64.AppImage
-./MultiClickerAutoclicker-x86_64.AppImage
+# 3. Make executable
+chmod +x AdvancedAutoclicker-x86_64.AppImage
 ```
 
-### Option 2: Manual Installation
-Follow the installation instructions below for your operating system.
+#### 🎯 **How to Use AppImage:**
+```bash
+# 1. One-time setup: Add user to input group (required for mouse control)
+sudo usermod -a -G input $USER
+
+# 2. Log out and log back in (or reboot)
+
+# 3. Run the AppImage
+./AdvancedAutoclicker-x86_64.AppImage
+```
+
+#### 🔧 **AppImage Features:**
+- **Bundled xdotool**: Clicks work outside app window on Ubuntu/Linux
+- **All libraries included**: X11, tkinter, pynput - no system packages needed
+- **Cross-distro**: Works on Ubuntu, Fedora, Arch, openSUSE, Mint, etc.
+- **Version independent**: Works regardless of system Python version
+
+### 📝 Option 2: Manual Installation
+If you prefer to install from source, follow the installation instructions below.
 
 ## Installation
 
@@ -133,46 +170,82 @@ To create a portable AppImage that works on any Linux distribution:
 # On Linux, run the build script
 python3 build_appimage.py
 
-# Or use the shell script
+# Or use the shell script (if available)
 ./build_appimage.sh
 ```
 
-This creates `MultiClickerAutoclicker-x86_64.AppImage` - a single file that:
-- Contains all dependencies (Python, pynput, tkinter, xdotool, X11 libraries)
-- Works on any Linux distribution without installing anything
-- Includes bundled xdotool for clicking outside the app window
-- Includes X11 libraries for maximum compatibility
-- Requires no installation or system dependencies
-- Just needs to be made executable: `chmod +x MultiClickerAutoclicker-x86_64.AppImage`
-- Still requires adding user to input group: `sudo usermod -a -G input $USER`
+This creates `AdvancedAutoclicker-x86_64.AppImage` - a single file that:
+- ✅ **Complete package**: Python, pynput, tkinter, xdotool, X11 libraries
+- ✅ **Universal compatibility**: Works on any Linux distribution
+- ✅ **Out-of-window clicking**: Bundled xdotool handles Ubuntu/Linux restrictions  
+- ✅ **No installation needed**: Just make executable and run
+- ✅ **Portable**: Copy to USB stick, share with others
+- ⚠️ **One requirement**: User must be in input group: `sudo usermod -a -G input $USER`
+
+### AppImage Build Requirements:
+- Linux system (Ubuntu, Fedora, etc.)
+- Python 3 and pip installed
+- Internet connection (downloads dependencies)
+- About 100MB free space for build process
 
 ## Usage
 
-### Basic Operation
+The application has two modes accessible via tabs:
 
-1. **Enable Clickers**: Check the "Enable" checkbox for the clickers you want to use
-2. **Set Timing**: Configure minutes, seconds, and milliseconds for each enabled clicker
-3. **Start Clicking**: Press F9 or click "Start All Enabled" to begin
-4. **Stop Clicking**: Press F9 again or click "Stop All" to stop
+### 🎯 Multi-Clicker Mode
 
-### Example Scenarios
+#### Basic Operation:
+1. **Enable Clickers**: Check "Enable" for clickers you want to use
+2. **Set Timing**: Configure minutes, seconds, milliseconds for each clicker  
+3. **Choose Coordinates**: Click "Choose Coordinates" and click where you want each clicker to click
+4. **Test Coordinates**: Use "Test" button to verify click positions
+5. **Start Clicking**: Press **F9** or click "Start All"
+6. **Stop Clicking**: Press **F9** again or click "Stop All"
 
-**Scenario 1: Single Clicker**
-- Enable Clicker 1
-- Set to 0 minutes, 5 seconds, 0 milliseconds
-- Press F9 - clicks every 5 seconds
+#### Features:
+- **Coordinate-based**: Clicks at specific screen positions (not mouse cursor)
+- **Independent timing**: Each clicker can have different intervals
+- **Test functionality**: Verify coordinates before starting
+- **Reset options**: Reset individual clickers or all at once
 
-**Scenario 2: Multiple Clickers**
-- Enable Clicker 1: 0 minutes, 10 seconds, 0 milliseconds
-- Enable Clicker 2: 0 minutes, 15 seconds, 0 milliseconds
-- Press F9 - clicks at 10s, 15s, 20s, 30s, 40s, 45s...
+### 🎬 Click Recorder Mode
 
-### Important Notes
+#### Recording:
+1. **Switch to "Click Recorder" tab**
+2. **Start Recording**: Click "Start Recording" or press **F10**
+3. **Perform Clicks**: Click anywhere on screen - coordinates and timing recorded
+4. **Stop Recording**: Press **F10** again or click "Stop Recording"
 
-- **Mouse Position**: Clicks occur at the current mouse cursor position when the hotkey is pressed
-- **Minimum Timing**: The minimum interval is 10 milliseconds
-- **Global Hotkey**: F9 works system-wide, even when the application is not in focus
-- **Thread Safety**: Each clicker runs independently in its own thread
+#### Replaying:
+1. **Set Replay Count**: Enter how many times to repeat the sequence
+2. **Start Replay**: Click "Start Replay" 
+3. **Watch**: Sequence replays with original timing and coordinates
+4. **Stop Early**: Click "Stop Replay" if needed
+
+#### Features:
+- **Exact reproduction**: Records precise coordinates and timing
+- **Multiple replays**: Repeat sequences any number of times
+- **Real-time feedback**: See recording progress and replay status
+- **Sequence management**: Clear and re-record as needed
+
+### 🎮 Global Hotkeys
+- **F9**: Start/Stop Multi-Clicker mode
+- **F10**: Start/Stop Recording in Recorder mode
+- Work system-wide even when app is not focused
+
+### 💡 Example Scenarios
+
+**Multi-Clicker Example:**
+- Enable Clicker 1: Set to click at (100, 200) every 5 seconds
+- Enable Clicker 2: Set to click at (300, 400) every 10 seconds
+- Press F9 - both click at their coordinates simultaneously
+
+**Recorder Example:**
+- Press F10 to start recording
+- Click through a sequence: login → navigate → submit → etc.
+- Press F10 to stop
+- Set replay count to 10
+- Click "Start Replay" - sequence repeats 10 times exactly
 
 ## Troubleshooting
 

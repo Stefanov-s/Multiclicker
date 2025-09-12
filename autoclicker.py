@@ -47,6 +47,10 @@ class ClickerSection:
         self.seconds = tk.StringVar(value="1")
         self.milliseconds = tk.StringVar(value="0")
         
+        # Coordinate variables
+        self.coordinates = None  # (x, y) tuple
+        self.coordinates_text = tk.StringVar(value="No coordinates set")
+        
         # Status tracking
         self.is_active = False
         self.click_count = 0
@@ -152,6 +156,60 @@ class ClickerSection:
                                 justify='center')
         self.ms_entry.pack()
         
+        # Coordinate selection frame
+        coord_frame = tk.Frame(self.frame, bg=COLORS['bg_section'])
+        coord_frame.pack(fill="x", pady=(8, 8))
+        
+        coord_label = tk.Label(coord_frame, text="Coordinates:", 
+                              font=("Segoe UI", 8),
+                              fg=COLORS['text_secondary'], 
+                              bg=COLORS['bg_section'])
+        coord_label.pack(side="left")
+        
+        self.coord_display = tk.Label(coord_frame, textvariable=self.coordinates_text,
+                                     font=("Segoe UI", 8),
+                                     fg=COLORS['text_primary'], 
+                                     bg=COLORS['bg_section'])
+        self.coord_display.pack(side="left", padx=(8, 0))
+        
+        self.choose_coord_btn = tk.Button(coord_frame, text="Choose Coordinates",
+                                         command=self.choose_coordinates,
+                                         font=("Segoe UI", 8),
+                                         bg=COLORS['accent_blue'],
+                                         fg=COLORS['text_primary'],
+                                         relief='flat',
+                                         bd=0,
+                                         padx=12,
+                                         pady=4,
+                                         cursor='hand2')
+        self.choose_coord_btn.pack(side="right", padx=(0, 5))
+        
+        # Test coordinates button
+        self.test_coord_btn = tk.Button(coord_frame, text="Test",
+                                       command=self.test_coordinates,
+                                       font=("Segoe UI", 8),
+                                       bg=COLORS['accent_blue_light'],
+                                       fg=COLORS['text_primary'],
+                                       relief='flat',
+                                       bd=0,
+                                       padx=8,
+                                       pady=4,
+                                       cursor='hand2')
+        self.test_coord_btn.pack(side="right", padx=(0, 5))
+        
+        # Reset button for this clicker
+        self.reset_btn = tk.Button(coord_frame, text="Reset",
+                                  command=self.reset_clicker,
+                                  font=("Segoe UI", 8),
+                                  bg=COLORS['button_disabled'],
+                                  fg=COLORS['text_primary'],
+                                  relief='flat',
+                                  bd=0,
+                                  padx=8,
+                                  pady=4,
+                                  cursor='hand2')
+        self.reset_btn.pack(side="right")
+        
         # Status display in compact row
         status_frame = tk.Frame(self.frame, bg=COLORS['bg_section'])
         status_frame.pack(fill="x")
@@ -174,6 +232,7 @@ class ClickerSection:
             self.min_label, self.min_entry,
             self.sec_label, self.sec_entry, 
             self.ms_label, self.ms_entry,
+            coord_label, self.coord_display, self.choose_coord_btn, self.test_coord_btn, self.reset_btn,
             self.status_label, self.count_label
         ]
         
@@ -230,9 +289,25 @@ class ClickerSection:
         # Update checkbox
         self.enable_cb.config(bg=bg_color, activebackground=bg_color, fg=text_color)
         
+        # Update coordinate buttons
+        if self.enabled.get():
+            self.choose_coord_btn.config(state='normal', bg=COLORS['accent_blue'])
+            # Test button enabled only if coordinates are set
+            if self.coordinates is not None:
+                self.test_coord_btn.config(state='normal', bg=COLORS['accent_blue_light'])
+                self.reset_btn.config(state='normal', bg=COLORS['button_disabled'])
+            else:
+                self.test_coord_btn.config(state='disabled', bg=COLORS['button_disabled'])
+                self.reset_btn.config(state='disabled', bg=COLORS['button_disabled'])
+        else:
+            self.choose_coord_btn.config(state='disabled', bg=COLORS['button_disabled'])
+            self.test_coord_btn.config(state='disabled', bg=COLORS['button_disabled'])
+            self.reset_btn.config(state='disabled', bg=COLORS['button_disabled'])
+        
         # Update labels
         self.status_label.config(bg=bg_color, fg=text_secondary)
         self.count_label.config(bg=bg_color, fg=text_secondary)
+        self.coord_display.config(bg=bg_color, fg=text_color)
     
     def _on_enabled_change(self, *args):
         """Handle enable/disable state changes"""
@@ -299,6 +374,57 @@ class ClickerSection:
             self.status_label.config(text="Status: Enabled (Waiting for hotkey)", fg=COLORS['accent_blue'])
             
         self.count_label.config(text=f"Clicks: {self.click_count}")
+    
+    def choose_coordinates(self):
+        """Start coordinate selection process"""
+        if hasattr(self, 'parent_app') and self.parent_app:
+            self.parent_app.start_coordinate_selection(self)
+        else:
+            # Fallback if parent_app is not set
+            messagebox.showinfo("Coordinate Selection", 
+                              "Click anywhere on the screen to set coordinates.\n"
+                              "The coordinates will be captured automatically.")
+    
+    def set_coordinates(self, x, y):
+        """Set the coordinates for this clicker"""
+        self.coordinates = (x, y)
+        self.coordinates_text.set(f"({x}, {y})")
+        print(f"📍 Clicker {self.section_id} coordinates set to: ({x}, {y})")
+        # Update visual state to enable test button
+        self._update_visual_state()
+    
+    def test_coordinates(self):
+        """Test the current coordinates by performing a single click"""
+        if self.coordinates is None:
+            messagebox.showwarning("No Coordinates", "Please set coordinates first by clicking 'Choose Coordinates'.")
+            return
+        
+        if hasattr(self, 'parent_app') and self.parent_app:
+            self.parent_app.test_click_at_coordinates(self.coordinates, self.section_id)
+        else:
+            messagebox.showinfo("Test Click", f"Would click at coordinates: {self.coordinates}")
+    
+    def reset_clicker(self):
+        """Reset this clicker to default values"""
+        # Reset time values
+        self.minutes.set("0")
+        self.seconds.set("1")
+        self.milliseconds.set("0")
+        
+        # Reset coordinates
+        self.coordinates = None
+        self.coordinates_text.set("No coordinates set")
+        
+        # Reset click count
+        self.click_count = 0
+        
+        # Update status
+        self.update_status(False, 0)
+        
+        # Update visual state
+        self._update_visual_state()
+        
+        print(f"🔄 Clicker {self.section_id} reset to defaults")
 
 
 class AutoClicker:
@@ -317,6 +443,15 @@ class AutoClicker:
         # Mouse controller
         self.mouse_controller = mouse.Controller()
         
+        # Recording variables
+        self.recorded_clicks = []
+        self.recording = False
+        self.recording_start_time = None
+        self.recording_listener = None
+        self.replaying = False
+        self.replay_count = 0
+        self.max_replays = 1
+        
         # Global hotkey setup
         self.hotkey_listener = None
         self.setup_hotkeys()
@@ -325,8 +460,8 @@ class AutoClicker:
         
     def setup_window(self):
         """Configure the main window"""
-        self.root.title("Multi-Clicker Autoclicker")
-        self.root.geometry("550x580")
+        self.root.title("Advanced Autoclicker")
+        self.root.geometry("600x700")
         self.root.resizable(False, False)
         self.root.configure(bg=COLORS['bg_main'])
         
@@ -334,27 +469,63 @@ class AutoClicker:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
     def create_widgets(self):
-        """Create all GUI widgets"""
-        # Main container with compact modern styling
+        """Create all GUI widgets with tab interface"""
+        # Main container
         main_frame = tk.Frame(self.root, bg=COLORS['bg_main'], padx=15, pady=15)
         main_frame.pack(fill="both", expand=True)
         
-        # Compact header
+        # Header
         header_frame = tk.Frame(main_frame, bg=COLORS['bg_main'])
         header_frame.pack(fill="x", pady=(0, 15))
         
-        # Main title with modern style
-        title_label = tk.Label(header_frame, text="Multi-Clicker Autoclicker", 
+        title_label = tk.Label(header_frame, text="Advanced Autoclicker", 
                               font=("Segoe UI", 16, "bold"), 
                               fg=COLORS['text_primary'], 
                               bg=COLORS['bg_main'])
         title_label.pack()
         
-        # Compact instructions
-        instructions_frame = tk.Frame(main_frame, bg=COLORS['bg_section'], relief='flat', bd=1)
+        # Create notebook for tabs
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure('TNotebook', background=COLORS['bg_main'], borderwidth=0)
+        style.configure('TNotebook.Tab', background=COLORS['bg_section'], 
+                       foreground=COLORS['text_primary'], padding=[12, 8])
+        style.map('TNotebook.Tab', background=[('selected', COLORS['accent_blue'])])
+        
+        self.notebook = ttk.Notebook(main_frame)
+        self.notebook.pack(fill="both", expand=True, pady=(0, 10))
+        
+        # Create tabs
+        self.create_multi_clicker_tab()
+        self.create_recorder_tab()
+        
+        # Global status at bottom
+        status_frame = tk.Frame(main_frame, bg=COLORS['bg_main'])
+        status_frame.pack(fill="x")
+        
+        self.global_status_label = tk.Label(status_frame, text="Status: Ready", 
+                                          font=("Segoe UI", 10, "bold"),
+                                          fg=COLORS['text_secondary'],
+                                          bg=COLORS['bg_main'])
+        self.global_status_label.pack(side="left")
+        
+        hotkey_info = tk.Label(status_frame, text="Hotkeys: F9 (Multi-Clicker), F10 (Record/Stop)", 
+                              fg=COLORS['accent_blue'], 
+                              bg=COLORS['bg_main'],
+                              font=("Segoe UI", 9))
+        hotkey_info.pack(side="right")
+    
+    def create_multi_clicker_tab(self):
+        """Create the multi-clicker tab"""
+        # Create tab frame
+        multi_frame = tk.Frame(self.notebook, bg=COLORS['bg_main'])
+        self.notebook.add(multi_frame, text="Multi-Clicker")
+        
+        # Instructions
+        instructions_frame = tk.Frame(multi_frame, bg=COLORS['bg_section'], relief='flat', bd=1)
         instructions_frame.pack(fill="x", pady=(0, 12), padx=3)
         
-        instructions = ("Enable clickers → Set timing → Press F9 to start/stop → Clicks at mouse position")
+        instructions = ("Enable clickers → Set timing → Choose coordinates → Press F9 to start/stop")
         
         instruction_label = tk.Label(instructions_frame, text=instructions, 
                                     justify="center", 
@@ -364,29 +535,25 @@ class AutoClicker:
         instruction_label.pack(pady=6)
         
         # Clickers container
-        clickers_frame = tk.Frame(main_frame, bg=COLORS['bg_main'])
+        clickers_frame = tk.Frame(multi_frame, bg=COLORS['bg_main'])
         clickers_frame.pack(fill="both", expand=True, pady=(0, 10))
         
         # Create 3 clicker sections
         for i in range(1, 4):
             clicker = ClickerSection(clickers_frame, i, self.on_config_change)
+            clicker.parent_app = self
             self.clickers.append(clicker)
         
-        # Global controls with compact styling
-        control_frame = tk.Frame(main_frame, bg=COLORS['bg_main'])
+        # Controls
+        control_frame = tk.Frame(multi_frame, bg=COLORS['bg_main'])
         control_frame.pack(fill="x", pady=(8, 0))
         
-        # Compact buttons
         self.start_all_btn = tk.Button(control_frame, text="Start All", 
                                       command=self.start_all_clickers,
                                       font=("Segoe UI", 10, "bold"),
                                       bg=COLORS['button_bg'],
                                       fg=COLORS['text_primary'],
-                                      relief='flat',
-                                      bd=0,
-                                      padx=20,
-                                      pady=6,
-                                      cursor='hand2')
+                                      relief='flat', bd=0, padx=20, pady=6, cursor='hand2')
         self.start_all_btn.pack(side="left", padx=(0, 10))
         
         self.stop_all_btn = tk.Button(control_frame, text="Stop All", 
@@ -394,31 +561,154 @@ class AutoClicker:
                                      font=("Segoe UI", 10, "bold"),
                                      bg=COLORS['button_disabled'],
                                      fg=COLORS['text_primary'],
-                                     relief='flat',
-                                     bd=0,
-                                     padx=20,
-                                     pady=6,
-                                     cursor='hand2')
-        self.stop_all_btn.pack(side="left")
+                                     relief='flat', bd=0, padx=20, pady=6, cursor='hand2')
+        self.stop_all_btn.pack(side="left", padx=(0, 15))
         
-        # Status and hotkey in one line for compactness
-        status_hotkey_frame = tk.Frame(main_frame, bg=COLORS['bg_main'])
-        status_hotkey_frame.pack(fill="x", pady=(10, 0))
+        self.reset_all_btn = tk.Button(control_frame, text="Reset All", 
+                                      command=self.reset_all_clickers,
+                                      font=("Segoe UI", 10, "bold"),
+                                      bg=COLORS['button_disabled'],
+                                      fg=COLORS['text_primary'],
+                                      relief='flat', bd=0, padx=20, pady=6, cursor='hand2')
+        self.reset_all_btn.pack(side="left")
+    
+    def create_recorder_tab(self):
+        """Create the click recorder tab"""
+        # Create tab frame
+        recorder_frame = tk.Frame(self.notebook, bg=COLORS['bg_main'])
+        self.notebook.add(recorder_frame, text="Click Recorder")
         
-        self.global_status_label = tk.Label(status_hotkey_frame, text="Status: Inactive", 
-                                          font=("Segoe UI", 10, "bold"),
-                                          fg=COLORS['text_secondary'],
-                                          bg=COLORS['bg_main'])
-        self.global_status_label.pack(side="left")
+        # Instructions
+        instructions_frame = tk.Frame(recorder_frame, bg=COLORS['bg_section'], relief='flat', bd=1)
+        instructions_frame.pack(fill="x", pady=(0, 15), padx=3)
         
-        hotkey_info = tk.Label(status_hotkey_frame, text="Hotkey: F9", 
-                              fg=COLORS['accent_blue'], 
-                              bg=COLORS['bg_main'],
-                              font=("Segoe UI", 10))
-        hotkey_info.pack(side="right")
+        instructions = ("Record clicks → Set replay count → Press F10 to record/stop → Replay sequence")
         
-        # Add hover effects to buttons
-        self._add_button_effects()
+        instruction_label = tk.Label(instructions_frame, text=instructions, 
+                                    justify="center", 
+                                    fg=COLORS['text_secondary'], 
+                                    bg=COLORS['bg_section'],
+                                    font=("Segoe UI", 8))
+        instruction_label.pack(pady=6)
+        
+        # Recording controls
+        record_frame = tk.Frame(recorder_frame, bg=COLORS['bg_section'], relief='flat', bd=1)
+        record_frame.pack(fill="x", pady=(0, 15), padx=3, ipady=15)
+        
+        record_title = tk.Label(record_frame, text="Recording Controls", 
+                               font=("Segoe UI", 12, "bold"),
+                               fg=COLORS['text_primary'], 
+                               bg=COLORS['bg_section'])
+        record_title.pack(pady=(0, 10))
+        
+        record_btn_frame = tk.Frame(record_frame, bg=COLORS['bg_section'])
+        record_btn_frame.pack()
+        
+        self.record_btn = tk.Button(record_btn_frame, text="Start Recording", 
+                                   command=self.toggle_recording,
+                                   font=("Segoe UI", 11, "bold"),
+                                   bg=COLORS['accent_blue'],
+                                   fg=COLORS['text_primary'],
+                                   relief='flat', bd=0, padx=25, pady=8, cursor='hand2')
+        self.record_btn.pack(side="left", padx=(0, 15))
+        
+        self.clear_record_btn = tk.Button(record_btn_frame, text="Clear Recording", 
+                                         command=self.clear_recording,
+                                         font=("Segoe UI", 11, "bold"),
+                                         bg=COLORS['button_disabled'],
+                                         fg=COLORS['text_primary'],
+                                         relief='flat', bd=0, padx=25, pady=8, cursor='hand2')
+        self.clear_record_btn.pack(side="left")
+        
+        # Recording status
+        self.record_status = tk.Label(record_frame, text="Status: Ready to record", 
+                                     font=("Segoe UI", 10),
+                                     fg=COLORS['text_secondary'], 
+                                     bg=COLORS['bg_section'])
+        self.record_status.pack(pady=(10, 0))
+        
+        # Replay controls
+        replay_frame = tk.Frame(recorder_frame, bg=COLORS['bg_section'], relief='flat', bd=1)
+        replay_frame.pack(fill="x", pady=(0, 15), padx=3, ipady=15)
+        
+        replay_title = tk.Label(replay_frame, text="Replay Controls", 
+                               font=("Segoe UI", 12, "bold"),
+                               fg=COLORS['text_primary'], 
+                               bg=COLORS['bg_section'])
+        replay_title.pack(pady=(0, 10))
+        
+        # Replay count setting
+        count_frame = tk.Frame(replay_frame, bg=COLORS['bg_section'])
+        count_frame.pack(pady=(0, 10))
+        
+        count_label = tk.Label(count_frame, text="Replay count:", 
+                              font=("Segoe UI", 10),
+                              fg=COLORS['text_secondary'], 
+                              bg=COLORS['bg_section'])
+        count_label.pack(side="left", padx=(0, 10))
+        
+        self.replay_count_var = tk.StringVar(value="1")
+        self.replay_count_entry = tk.Entry(count_frame, textvariable=self.replay_count_var, width=8,
+                                          font=("Segoe UI", 10), 
+                                          relief='flat', bd=0,
+                                          bg=COLORS['entry_bg'],
+                                          fg=COLORS['text_primary'],
+                                          insertbackground=COLORS['text_primary'],
+                                          highlightthickness=1,
+                                          highlightcolor=COLORS['accent_blue'],
+                                          justify='center')
+        self.replay_count_entry.pack(side="left")
+        
+        # Replay buttons
+        replay_btn_frame = tk.Frame(replay_frame, bg=COLORS['bg_section'])
+        replay_btn_frame.pack(pady=(10, 0))
+        
+        self.replay_btn = tk.Button(replay_btn_frame, text="Start Replay", 
+                                   command=self.start_replay,
+                                   font=("Segoe UI", 11, "bold"),
+                                   bg=COLORS['button_disabled'],
+                                   fg=COLORS['text_primary'],
+                                   relief='flat', bd=0, padx=25, pady=8, cursor='hand2')
+        self.replay_btn.pack(side="left", padx=(0, 15))
+        
+        self.stop_replay_btn = tk.Button(replay_btn_frame, text="Stop Replay", 
+                                        command=self.stop_replay,
+                                        font=("Segoe UI", 11, "bold"),
+                                        bg=COLORS['button_disabled'],
+                                        fg=COLORS['text_primary'],
+                                        relief='flat', bd=0, padx=25, pady=8, cursor='hand2')
+        self.stop_replay_btn.pack(side="left")
+        
+        # Replay status
+        self.replay_status = tk.Label(replay_frame, text="Status: No recording to replay", 
+                                     font=("Segoe UI", 10),
+                                     fg=COLORS['text_secondary'], 
+                                     bg=COLORS['bg_section'])
+        self.replay_status.pack(pady=(10, 0))
+        
+        # Recording info display
+        info_frame = tk.Frame(recorder_frame, bg=COLORS['bg_section'], relief='flat', bd=1)
+        info_frame.pack(fill="both", expand=True, padx=3, ipady=10)
+        
+        info_title = tk.Label(info_frame, text="Recording Information", 
+                             font=("Segoe UI", 12, "bold"),
+                             fg=COLORS['text_primary'], 
+                             bg=COLORS['bg_section'])
+        info_title.pack(pady=(0, 10))
+        
+        self.recording_info = tk.Text(info_frame, height=8, width=50,
+                                     font=("Segoe UI", 9),
+                                     bg=COLORS['entry_bg'],
+                                     fg=COLORS['text_primary'],
+                                     relief='flat', bd=0,
+                                     wrap=tk.WORD,
+                                     state='disabled')
+        self.recording_info.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        
+        # Initial info text
+        self.recording_info.config(state='normal')
+        self.recording_info.insert('1.0', "No recording yet. Click 'Start Recording' or press F10 to begin recording clicks.")
+        self.recording_info.config(state='disabled')
     
     def _add_button_effects(self):
         """Add hover effects to buttons for modern feel"""
@@ -434,16 +724,25 @@ class AutoClicker:
         def on_leave_stop(event):
             self.stop_all_btn.config(bg=COLORS['button_disabled'])
         
+        def on_enter_reset(event):
+            self.reset_all_btn.config(bg=COLORS['accent_blue_hover'])
+        
+        def on_leave_reset(event):
+            self.reset_all_btn.config(bg=COLORS['button_disabled'])
+        
         self.start_all_btn.bind("<Enter>", on_enter_start)
         self.start_all_btn.bind("<Leave>", on_leave_start)
         self.stop_all_btn.bind("<Enter>", on_enter_stop)
         self.stop_all_btn.bind("<Leave>", on_leave_stop)
+        self.reset_all_btn.bind("<Enter>", on_enter_reset)
+        self.reset_all_btn.bind("<Leave>", on_leave_reset)
     
     def setup_hotkeys(self):
         """Set up global hotkey listener"""
         try:
             hotkeys = {
-                '<f9>': self.toggle_clickers
+                '<f9>': self.toggle_clickers,
+                '<f10>': self.toggle_recording
             }
             self.hotkey_listener = GlobalHotKeys(hotkeys)
             self.hotkey_listener.start()
@@ -484,6 +783,15 @@ class AutoClicker:
             messagebox.showinfo("Info", "No clickers are enabled!\nPlease enable at least one clicker to start.")
             return
         
+        # Check if all enabled clickers have coordinates set
+        clickers_without_coords = [c for c in enabled_clickers if c.coordinates is None]
+        if clickers_without_coords:
+            clicker_numbers = [str(c.section_id) for c in clickers_without_coords]
+            messagebox.showwarning("Missing Coordinates", 
+                                 f"Clicker(s) {', '.join(clicker_numbers)} have no coordinates set!\n"
+                                 f"Please click 'Choose Coordinates' to set click positions before starting.")
+            return
+        
         self.global_active = True
         self.global_status_label.config(text="Status: ACTIVE", 
                                        fg=COLORS['accent_blue_light'])
@@ -511,19 +819,56 @@ class AutoClicker:
         
         # Threads will stop naturally when they check global_active
     
+    def reset_all_clickers(self):
+        """Reset all clickers to default values"""
+        # Stop all clickers first
+        self.stop_all_clickers()
+        
+        # Reset each clicker
+        for clicker in self.clickers:
+            clicker.reset_clicker()
+        
+        print("🔄 All clickers reset to defaults")
+        messagebox.showinfo("Reset Complete", "All clickers have been reset to default values.")
+    
     def clicker_worker(self, clicker):
         """Worker thread for individual clicker"""
         self.active_clickers.add(clicker.section_id)
         
         while self.global_active and clicker.enabled.get():
             try:
-                # Get current mouse position
-                current_pos = self.mouse_controller.position
-                print(f"🖱️  Clicking at position: {current_pos}")
+                # Check if coordinates are set
+                if clicker.coordinates is None:
+                    print(f"⚠️  Clicker {clicker.section_id}: No coordinates set, skipping...")
+                    # Update UI to show warning
+                    self.root.after(0, lambda c=clicker: c.update_status(False))
+                    break
                 
-                # Perform click with error handling for Linux
+                # Use stored coordinates
+                target_x, target_y = clicker.coordinates
+                print(f"🖱️  Clicking at coordinates: ({target_x}, {target_y})")
+                
+                # Move mouse to target position and click with improved multi-monitor handling
                 try:
+                    # First, try to set position and verify it worked
+                    self.mouse_controller.position = (target_x, target_y)
+                    time.sleep(0.02)  # Slightly longer delay for multi-monitor setups
+                    
+                    # Verify the position was set correctly
+                    actual_pos = self.mouse_controller.position
+                    print(f"🎯 Target: ({target_x}, {target_y}), Actual: {actual_pos}")
+                    
+                    # If position is significantly off, try alternative approach
+                    pos_diff = abs(actual_pos[0] - target_x) + abs(actual_pos[1] - target_y)
+                    if pos_diff > 5:  # If more than 5 pixels off
+                        print(f"⚠️  Position offset detected: {pos_diff} pixels")
+                        # Try setting position again
+                        self.mouse_controller.position = (target_x, target_y)
+                        time.sleep(0.01)
+                    
+                    # Perform the click
                     self.mouse_controller.click(mouse.Button.left, 1)
+                    
                 except Exception as click_error:
                     print(f"⚠️  Click failed: {click_error}")
                     # Try alternative method for Linux
@@ -540,7 +885,7 @@ class AutoClicker:
                                     xdotool_cmd = bundled_xdotool
                                     print("🎯 Using bundled xdotool from AppImage")
                             
-                            subprocess.run([xdotool_cmd, 'click', '1'], 
+                            subprocess.run([xdotool_cmd, 'mousemove', str(target_x), str(target_y), 'click', '1'], 
                                          check=True, capture_output=True)
                             print("✅ Used xdotool as fallback")
                         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -585,9 +930,442 @@ class AutoClicker:
         # Update UI
         self.root.after(0, lambda c=clicker: c.update_status(False))
     
+    def start_coordinate_selection(self, clicker_section):
+        """Start coordinate selection for a specific clicker"""
+        self.coordinate_selection_clicker = clicker_section
+        
+        # Minimize the main window
+        self.root.iconify()
+        
+        # Show instruction dialog
+        instruction_window = tk.Toplevel()
+        instruction_window.title("Select Coordinates")
+        instruction_window.geometry("400x200")
+        instruction_window.configure(bg=COLORS['bg_main'])
+        instruction_window.resizable(False, False)
+        instruction_window.attributes('-topmost', True)
+        
+        # Center the instruction window
+        instruction_window.update_idletasks()
+        x = (instruction_window.winfo_screenwidth() // 2) - (400 // 2)
+        y = (instruction_window.winfo_screenheight() // 2) - (200 // 2)
+        instruction_window.geometry(f"400x200+{x}+{y}")
+        
+        # Create instruction content
+        main_frame = tk.Frame(instruction_window, bg=COLORS['bg_main'], padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True)
+        
+        title_label = tk.Label(main_frame, 
+                              text=f"Setting Coordinates for Clicker {clicker_section.section_id}",
+                              font=("Segoe UI", 12, "bold"),
+                              fg=COLORS['text_primary'],
+                              bg=COLORS['bg_main'])
+        title_label.pack(pady=(0, 15))
+        
+        instruction_label = tk.Label(main_frame,
+                                   text="Click anywhere on your screen to set the coordinates.\n"
+                                        "The coordinates will be captured automatically.\n\n"
+                                        "Close this window to cancel.",
+                                   font=("Segoe UI", 10),
+                                   fg=COLORS['text_secondary'],
+                                   bg=COLORS['bg_main'],
+                                   justify='center')
+        instruction_label.pack(pady=(0, 20))
+        
+        # Cancel button
+        cancel_btn = tk.Button(main_frame, text="Cancel",
+                              command=lambda: self.cancel_coordinate_selection(instruction_window),
+                              font=("Segoe UI", 10),
+                              bg=COLORS['button_disabled'],
+                              fg=COLORS['text_primary'],
+                              relief='flat',
+                              bd=0,
+                              padx=20,
+                              pady=8,
+                              cursor='hand2')
+        cancel_btn.pack()
+        
+        # Set up mouse listener for coordinate capture
+        self.coordinate_listener = mouse.Listener(on_click=self.on_coordinate_click)
+        self.coordinate_listener.start()
+        
+        # Store reference to instruction window
+        self.coordinate_instruction_window = instruction_window
+        
+        # Handle window close
+        instruction_window.protocol("WM_DELETE_WINDOW", 
+                                   lambda: self.cancel_coordinate_selection(instruction_window))
+    
+    def on_coordinate_click(self, x, y, button, pressed):
+        """Handle mouse click during coordinate selection"""
+        if pressed and button == mouse.Button.left:
+            # Stop the listener
+            if hasattr(self, 'coordinate_listener'):
+                self.coordinate_listener.stop()
+            
+            # Set coordinates for the clicker with improved handling
+            if hasattr(self, 'coordinate_selection_clicker'):
+                # Convert to int and add debug info
+                coord_x, coord_y = int(x), int(y)
+                print(f"🎯 Captured coordinates: ({coord_x}, {coord_y})")
+                
+                # Validate coordinates are within reasonable bounds
+                try:
+                    # Test if we can get current mouse position for validation
+                    current_pos = self.mouse_controller.position
+                    print(f"🖱️  Current mouse position: {current_pos}")
+                    
+                    # Set the coordinates
+                    self.coordinate_selection_clicker.set_coordinates(coord_x, coord_y)
+                    
+                except Exception as e:
+                    print(f"⚠️  Coordinate validation warning: {e}")
+                    # Still set coordinates even if validation fails
+                    self.coordinate_selection_clicker.set_coordinates(coord_x, coord_y)
+            
+            # Close instruction window and restore main window
+            self.root.after(0, self.complete_coordinate_selection)
+            
+            return False  # Stop the listener
+    
+    def complete_coordinate_selection(self):
+        """Complete the coordinate selection process"""
+        # Close instruction window
+        if hasattr(self, 'coordinate_instruction_window'):
+            self.coordinate_instruction_window.destroy()
+            delattr(self, 'coordinate_instruction_window')
+        
+        # Restore main window
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+        
+        # Clean up
+        if hasattr(self, 'coordinate_selection_clicker'):
+            delattr(self, 'coordinate_selection_clicker')
+        if hasattr(self, 'coordinate_listener'):
+            delattr(self, 'coordinate_listener')
+    
+    def cancel_coordinate_selection(self, instruction_window):
+        """Cancel coordinate selection"""
+        # Stop the listener
+        if hasattr(self, 'coordinate_listener'):
+            self.coordinate_listener.stop()
+            delattr(self, 'coordinate_listener')
+        
+        # Close instruction window
+        instruction_window.destroy()
+        
+        # Restore main window
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+        
+        # Clean up
+        if hasattr(self, 'coordinate_selection_clicker'):
+            delattr(self, 'coordinate_selection_clicker')
+    
+    def test_click_at_coordinates(self, coordinates, clicker_id):
+        """Test click at specific coordinates"""
+        target_x, target_y = coordinates
+        print(f"🧪 Testing click for Clicker {clicker_id} at ({target_x}, {target_y})")
+        
+        try:
+            # Store current mouse position to restore later
+            original_pos = self.mouse_controller.position
+            
+            # Move to target position
+            self.mouse_controller.position = (target_x, target_y)
+            time.sleep(0.02)
+            
+            # Verify position
+            actual_pos = self.mouse_controller.position
+            pos_diff = abs(actual_pos[0] - target_x) + abs(actual_pos[1] - target_y)
+            
+            print(f"🎯 Test - Target: ({target_x}, {target_y}), Actual: {actual_pos}, Diff: {pos_diff}")
+            
+            # Perform test click
+            self.mouse_controller.click(mouse.Button.left, 1)
+            
+            # Show result
+            if pos_diff <= 2:
+                messagebox.showinfo("Test Result", f"✅ Test click successful!\n"
+                                   f"Target: ({target_x}, {target_y})\n"
+                                   f"Actual: {actual_pos}\n"
+                                   f"Precision: {pos_diff} pixels off")
+            else:
+                messagebox.showwarning("Test Result", f"⚠️  Test click with offset!\n"
+                                      f"Target: ({target_x}, {target_y})\n"
+                                      f"Actual: {actual_pos}\n"
+                                      f"Offset: {pos_diff} pixels\n\n"
+                                      f"This may be due to multi-monitor setup.\n"
+                                      f"Try recapturing coordinates if needed.")
+            
+            # Restore original mouse position
+            time.sleep(0.1)
+            self.mouse_controller.position = original_pos
+            
+        except Exception as e:
+            print(f"❌ Test click failed: {e}")
+            messagebox.showerror("Test Failed", f"Test click failed: {e}\n\n"
+                               f"This may be due to system restrictions or multi-monitor issues.")
+    
+    # Recording Methods
+    def toggle_recording(self):
+        """Toggle recording on/off"""
+        if self.recording:
+            self.stop_recording()
+        else:
+            self.start_recording()
+    
+    def start_recording(self):
+        """Start recording clicks"""
+        if self.replaying:
+            messagebox.showwarning("Recording Error", "Cannot record while replaying. Stop replay first.")
+            return
+        
+        self.recorded_clicks = []
+        self.recording = True
+        self.recording_start_time = time.time()
+        
+        # Update UI
+        self.record_btn.config(text="Stop Recording", bg=COLORS['accent_blue_hover'])
+        self.record_status.config(text="Status: Recording... (Press F10 to stop)", fg=COLORS['accent_blue_light'])
+        self.global_status_label.config(text="Status: Recording clicks", fg=COLORS['accent_blue_light'])
+        
+        # Start mouse listener
+        self.recording_listener = mouse.Listener(on_click=self.on_recording_click)
+        self.recording_listener.start()
+        
+        # Update recording info
+        self.update_recording_info("Recording started. Click anywhere to record clicks...")
+        
+        print("🎬 Recording started")
+    
+    def stop_recording(self):
+        """Stop recording clicks"""
+        if not self.recording:
+            return
+        
+        self.recording = False
+        
+        # Stop listener
+        if self.recording_listener:
+            self.recording_listener.stop()
+            self.recording_listener = None
+        
+        # Update UI
+        self.record_btn.config(text="Start Recording", bg=COLORS['accent_blue'])
+        click_count = len(self.recorded_clicks)
+        
+        if click_count > 0:
+            duration = time.time() - self.recording_start_time
+            self.record_status.config(text=f"Status: Recorded {click_count} clicks in {duration:.1f}s", 
+                                     fg=COLORS['text_secondary'])
+            self.replay_btn.config(bg=COLORS['accent_blue'], state='normal')
+            self.clear_record_btn.config(bg=COLORS['accent_blue_hover'])
+            self.replay_status.config(text=f"Status: Ready to replay {click_count} clicks")
+            
+            # Update recording info with details
+            info_text = f"Recording completed!\n\n"
+            info_text += f"Total clicks: {click_count}\n"
+            info_text += f"Duration: {duration:.1f} seconds\n\n"
+            info_text += "Click sequence:\n"
+            
+            for i, (x, y, delay) in enumerate(self.recorded_clicks, 1):
+                info_text += f"{i}. Click at ({x}, {y}) after {delay:.2f}s\n"
+            
+            self.update_recording_info(info_text)
+        else:
+            self.record_status.config(text="Status: No clicks recorded", fg=COLORS['text_disabled'])
+            self.update_recording_info("Recording stopped. No clicks were recorded.")
+        
+        self.global_status_label.config(text="Status: Ready", fg=COLORS['text_secondary'])
+        print(f"🎬 Recording stopped. Captured {click_count} clicks")
+    
+    def on_recording_click(self, x, y, button, pressed):
+        """Handle mouse click during recording"""
+        if pressed and button == mouse.Button.left and self.recording:
+            current_time = time.time()
+            delay = current_time - self.recording_start_time
+            
+            # Store click with coordinates and timing
+            self.recorded_clicks.append((int(x), int(y), delay))
+            
+            click_num = len(self.recorded_clicks)
+            print(f"📹 Recorded click {click_num}: ({int(x)}, {int(y)}) at {delay:.2f}s")
+            
+            # Update status
+            self.root.after(0, lambda: self.record_status.config(
+                text=f"Status: Recording... {click_num} clicks recorded"))
+    
+    def clear_recording(self):
+        """Clear the current recording"""
+        if self.recording:
+            self.stop_recording()
+        
+        self.recorded_clicks = []
+        self.record_status.config(text="Status: Ready to record", fg=COLORS['text_secondary'])
+        self.replay_btn.config(bg=COLORS['button_disabled'], state='disabled')
+        self.clear_record_btn.config(bg=COLORS['button_disabled'])
+        self.replay_status.config(text="Status: No recording to replay")
+        
+        self.update_recording_info("Recording cleared. Click 'Start Recording' or press F10 to begin recording clicks.")
+        print("🗑️ Recording cleared")
+    
+    def start_replay(self):
+        """Start replaying recorded clicks"""
+        if not self.recorded_clicks:
+            messagebox.showwarning("Replay Error", "No recording to replay. Record some clicks first.")
+            return
+        
+        if self.recording:
+            messagebox.showwarning("Replay Error", "Cannot replay while recording. Stop recording first.")
+            return
+        
+        try:
+            self.max_replays = int(self.replay_count_var.get())
+            if self.max_replays <= 0:
+                raise ValueError()
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter a valid positive number for replay count.")
+            return
+        
+        self.replaying = True
+        self.replay_count = 0
+        
+        # Update UI
+        self.replay_btn.config(text="Replaying...", bg=COLORS['accent_blue_hover'], state='disabled')
+        self.stop_replay_btn.config(bg=COLORS['accent_blue'], state='normal')
+        self.record_btn.config(state='disabled')
+        self.global_status_label.config(text="Status: Replaying clicks", fg=COLORS['accent_blue_light'])
+        
+        # Start replay in separate thread
+        replay_thread = threading.Thread(target=self.replay_worker, daemon=True)
+        replay_thread.start()
+        
+        print(f"▶️ Starting replay of {len(self.recorded_clicks)} clicks, {self.max_replays} times")
+    
+    def stop_replay(self):
+        """Stop replaying"""
+        self.replaying = False
+        
+        # Update UI
+        self.replay_btn.config(text="Start Replay", bg=COLORS['accent_blue'], state='normal')
+        self.stop_replay_btn.config(bg=COLORS['button_disabled'], state='disabled')
+        self.record_btn.config(state='normal')
+        self.global_status_label.config(text="Status: Ready", fg=COLORS['text_secondary'])
+        
+        if self.replay_count > 0:
+            self.replay_status.config(text=f"Status: Stopped after {self.replay_count} replays")
+        else:
+            self.replay_status.config(text=f"Status: Ready to replay {len(self.recorded_clicks)} clicks")
+        
+        print("⏹️ Replay stopped")
+    
+    def replay_worker(self):
+        """Worker thread for replaying clicks"""
+        try:
+            for replay_num in range(self.max_replays):
+                if not self.replaying:
+                    break
+                
+                self.replay_count = replay_num + 1
+                
+                # Update status
+                self.root.after(0, lambda: self.replay_status.config(
+                    text=f"Status: Replaying... {self.replay_count}/{self.max_replays}"))
+                
+                # Replay each click
+                start_time = time.time()
+                
+                for i, (x, y, original_delay) in enumerate(self.recorded_clicks):
+                    if not self.replaying:
+                        break
+                    
+                    # Wait for the original delay
+                    elapsed = time.time() - start_time
+                    wait_time = original_delay - elapsed
+                    
+                    if wait_time > 0:
+                        time.sleep(wait_time)
+                    
+                    if not self.replaying:
+                        break
+                    
+                    # Perform click
+                    try:
+                        self.mouse_controller.position = (x, y)
+                        time.sleep(0.01)
+                        self.mouse_controller.click(mouse.Button.left, 1)
+                        print(f"🔄 Replay {self.replay_count}: Click {i+1} at ({x}, {y})")
+                    except Exception as e:
+                        print(f"❌ Replay click failed: {e}")
+                        # Try Linux xdotool fallback
+                        if sys.platform.startswith('linux'):
+                            try:
+                                import subprocess
+                                
+                                # Check for bundled xdotool first (AppImage)
+                                xdotool_cmd = 'xdotool'
+                                if 'APPDIR' in os.environ:
+                                    bundled_xdotool = os.path.join(os.environ['APPDIR'], 'usr', 'bin', 'xdotool')
+                                    if os.path.exists(bundled_xdotool):
+                                        xdotool_cmd = bundled_xdotool
+                                        print("🎯 Using bundled xdotool from AppImage for replay")
+                                
+                                subprocess.run([xdotool_cmd, 'mousemove', str(x), str(y), 'click', '1'], 
+                                             check=True, capture_output=True)
+                                print(f"✅ Replay {self.replay_count}: Click {i+1} at ({x}, {y}) via xdotool")
+                            except (subprocess.CalledProcessError, FileNotFoundError):
+                                print(f"❌ xdotool fallback failed for replay click {i+1}")
+                        else:
+                            # Non-Linux systems - break on click failure
+                            break
+                
+                # Small delay between replays
+                if self.replaying and replay_num < self.max_replays - 1:
+                    time.sleep(0.5)
+            
+            # Replay completed
+            if self.replaying:
+                self.root.after(0, self.replay_completed)
+                
+        except Exception as e:
+            print(f"❌ Replay error: {e}")
+            self.root.after(0, self.stop_replay)
+    
+    def replay_completed(self):
+        """Handle replay completion"""
+        self.replaying = False
+        
+        # Update UI
+        self.replay_btn.config(text="Start Replay", bg=COLORS['accent_blue'], state='normal')
+        self.stop_replay_btn.config(bg=COLORS['button_disabled'], state='disabled')
+        self.record_btn.config(state='normal')
+        self.global_status_label.config(text="Status: Ready", fg=COLORS['text_secondary'])
+        self.replay_status.config(text=f"Status: Completed {self.replay_count} replays")
+        
+        print(f"✅ Replay completed: {self.replay_count} replays finished")
+    
+    def update_recording_info(self, text):
+        """Update the recording information display"""
+        self.recording_info.config(state='normal')
+        self.recording_info.delete('1.0', tk.END)
+        self.recording_info.insert('1.0', text)
+        self.recording_info.config(state='disabled')
+    
     def on_closing(self):
         """Handle application closing"""
         self.stop_all_clickers()
+        
+        # Stop recording if active
+        if self.recording:
+            self.stop_recording()
+        
+        # Stop replay if active
+        if self.replaying:
+            self.stop_replay()
         
         if self.hotkey_listener:
             self.hotkey_listener.stop()

@@ -24,7 +24,7 @@ def run_command(cmd, cwd=None):
         return False
 
 def main():
-    print("🚀 Building Multi-Clicker Autoclicker AppImage...")
+    print("🚀 Building Advanced Autoclicker AppImage...")
     
     # Check if we're on Linux
     if sys.platform != "linux":
@@ -33,7 +33,7 @@ def main():
     
     # Create build directory
     build_dir = Path("appimage-build")
-    app_dir = build_dir / "MultiClickerAutoclicker.AppDir"
+    app_dir = build_dir / "AdvancedAutoclicker.AppDir"
     
     if build_dir.exists():
         shutil.rmtree(build_dir)
@@ -55,18 +55,18 @@ def main():
     # Create desktop file
     desktop_content = """[Desktop Entry]
 Type=Application
-Name=Multi-Clicker Autoclicker
-Comment=Advanced multi-clicker automation tool
+Name=Advanced Autoclicker
+Comment=Multi-clicker and click recorder automation tool
 Exec=autoclicker
 Icon=autoclicker
 Categories=Utility;
 Terminal=false
 """
     
-    with open(app_dir / "MultiClickerAutoclicker.desktop", "w") as f:
+    with open(app_dir / "AdvancedAutoclicker.desktop", "w") as f:
         f.write(desktop_content)
     
-    with open(app_dir / "usr" / "share" / "applications" / "MultiClickerAutoclicker.desktop", "w") as f:
+    with open(app_dir / "usr" / "share" / "applications" / "AdvancedAutoclicker.desktop", "w") as f:
         f.write(desktop_content)
     
     # Create a simple icon (text-based for now)
@@ -219,15 +219,20 @@ exec python3 autoclicker.py "$@"
     print("🏗️ Building AppImage...")
     
     # Build the AppImage
-    if not run_command(f"./{appimagetool_path} {app_dir} MultiClickerAutoclicker-x86_64.AppImage"):
+    if not run_command(f"./{appimagetool_path} {app_dir} AdvancedAutoclicker-x86_64.AppImage"):
         print("❌ Failed to build AppImage")
         return False
     
     # Make the AppImage executable
-    if os.path.exists("MultiClickerAutoclicker-x86_64.AppImage"):
-        os.chmod("MultiClickerAutoclicker-x86_64.AppImage", 0o755)
-        print("✅ AppImage built successfully: MultiClickerAutoclicker-x86_64.AppImage")
+    if os.path.exists("AdvancedAutoclicker-x86_64.AppImage"):
+        os.chmod("AdvancedAutoclicker-x86_64.AppImage", 0o755)
+        print("✅ AppImage built successfully: AdvancedAutoclicker-x86_64.AppImage")
         print("📦 You can now distribute this single file to any Linux system!")
+        print("")
+        print("🎯 Usage:")
+        print("   sudo usermod -a -G input $USER  # One-time setup")
+        print("   # Log out and log back in")
+        print("   ./AdvancedAutoclicker-x86_64.AppImage")
         return True
     else:
         print("❌ AppImage file not found after build")
